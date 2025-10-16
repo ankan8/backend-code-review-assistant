@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Code Review Assistant</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui; margin: 2rem; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin:12px 0; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <h1>Code Review Assistant</h1>
+  <form id="upload-form">
+    <input type="file" id="files" multiple />
+    <button type="submit">Upload & Review</button>
+  </form>
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('files');
+      if (!input.files.length) { alert('Pick files first'); return; }
+      const fd = new FormData();
+      for (const f of input.files) fd.append('files', f);
+
+      const res = await fetch('/api/v1/reviews/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      render(data);
+    });
+
+    function render(r) {
+      result.innerHTML = `
+        <div class="card">
+          <h3>Review #${r.id}</h3>
+          <p><strong>LLM used:</strong> ${r.llm_used}</p>
+          <pre>${r.summary || ''}</pre>
+          <h4>Issues (${r.issues.length})</h4>
+          <ul>
+            ${r.issues.map(i => `<li>[${i.severity}] ${i.rule_id} — ${i.message}${i.line?` (line ${i.line})`:''}</li>`).join('')}
+          </ul>
+        </div>`;
+    }
+  </script>
+</body>
+</html>
